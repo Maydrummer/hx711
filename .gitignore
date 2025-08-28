@@ -1,0 +1,15 @@
+
+build/
+managed_components/
+CMakeFiles/
+*.bin
+*.elf
+*.map
+*.log
+# Ignorar archivo de bloqueo de dependencias
+dependencies.lock
+.devcontainer/
+.vscode/*
+# Ignorar componentes gestionados automáticamente
+managed_components/
+CMakeCache.txt
