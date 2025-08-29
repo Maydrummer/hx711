@@ -1,5 +1,4 @@
 #include "port.h"
-#include "esp_log.h"
 #include "driver/rmt_tx.h"
 #include "driver/gpio.h"
 
@@ -8,7 +7,9 @@ rmt_channel_handle_t tx_chan = NULL;
 
 static esp_err_t config_rmt_channel(gpio_num_t gpio);
 static esp_err_t config_gpio_data(gpio_num_t gpio);
-esp_err_t transmit_exact_pulses_efficient(uint32_t pulse_count, uint32_t high_time_us, uint32_t low_time_us);
+static int transmit_exact_pulses_efficient(uint32_t pulse_count, uint32_t high_time_us, uint32_t low_time_us);
+static int setup_sensor(uint8_t data_pin, uint8_t clock_pin);
+static int gpio_state(uint8_t gpio);
 
 static esp_err_t config_rmt_channel(gpio_num_t gpio)
 {
@@ -54,8 +55,9 @@ static esp_err_t config_gpio_data(gpio_num_t gpio)
     return ESP_OK;
 }
 
-esp_err_t transmit_exact_pulses_efficient(uint32_t pulse_count, uint32_t high_time_us, uint32_t low_time_us)
+static int transmit_exact_pulses_efficient(uint32_t pulse_count, uint32_t high_time_us, uint32_t low_time_us)
 {
+    int ack = 1;
     rmt_symbol_word_t single_pulse[2] = {
         {.level0 = 1, .duration0 = high_time_us, .level1 = 1, .duration1 = 0},
         {.level0 = 0, .duration0 = low_time_us, .level1 = 0, .duration1 = 0}
@@ -76,12 +78,12 @@ esp_err_t transmit_exact_pulses_efficient(uint32_t pulse_count, uint32_t high_ti
 
     rmt_tx_wait_all_done(tx_chan, 0xffffffffUL);
     rmt_del_encoder(copy_encoder);
-
-    return ret;
+    if(ret!=ESP_OK)ack = 0;
+    return ack;
 }
 
-/* Public functions */
-int setup_sensor(uint8_t data_pin, uint8_t clock_pin)
+
+static int setup_sensor(uint8_t data_pin, uint8_t clock_pin)
 {
     int ack = 1;
     esp_err_t ret = config_rmt_channel(clock_pin);
@@ -99,20 +101,14 @@ int setup_sensor(uint8_t data_pin, uint8_t clock_pin)
     return ack;
 }
 
-int gpio_state(uint8_t gpio)
+static int gpio_state(uint8_t gpio)
 {
     return gpio_get_level(gpio);
 }
 
-
-int generate_n_pulses(uint32_t pulse_count, uint32_t high_time_us, uint32_t low_time_us)
-{
-    int ack = 1;
-    esp_err_t ret = transmit_exact_pulses_efficient(pulse_count,high_time_us,low_time_us);
-    if(ret!=ESP_OK)
-    {
-        ack= 0;
-        return ack;
-    }
-    return ack;
-}
+/* Port ESP32-C3*/
+PortInterface_t ESP32_C3_Port = {
+    .init_interface = setup_sensor,
+    .data_line_state = gpio_state,
+    .generate_n_pulses = transmit_exact_pulses_efficient
+};
