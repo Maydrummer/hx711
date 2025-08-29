@@ -9,20 +9,21 @@ static int32_t _hx711_read_raw(hx711_t *module);
 static int32_t _hx711_read_raw(hx711_t *module)
 {
     uint32_t count = 0;
-    if(module->port->data_line_state(module->dt_pin) == 0)
+    while(!(module->port->data_line_state(module->dt_pin) == 0));
+    // if(module->port->data_line_state(module->dt_pin) == 0)
+    // {
+    for(uint8_t i=0 ; i<24; i++)
     {
-        for(uint8_t i=0 ; i<24; i++)
+        module->port->generate_n_pulses(1,25,0);
+        count = count << 1 ;
+        if(module->port->data_line_state(module->dt_pin) == 1)
         {
-            module->port->generate_n_pulses(1,25,0);
-            count = count << 1 ;
-            if(module->port->data_line_state(module->dt_pin) == 1)
-            {
-                count = count + 1;
-            }
-            module->port->generate_n_pulses(1,0,25);
+            count = count + 1;
         }
-        module->port->generate_n_pulses(aditional_pulses,25,25);
+        module->port->generate_n_pulses(1,0,25);
     }
+    module->port->generate_n_pulses(aditional_pulses,25,25);
+    // }
     
     if (count & 0x800000)  // si el bit 23 (signo) está en 1
     {

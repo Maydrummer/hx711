@@ -36,6 +36,6 @@ void app_main(void)
     while (1) {
         data = hx711_get_weight(&sensor_1, SAMPLES);
         ESP_LOGI("MAIN", "Value: %.2f gramos", data);
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
